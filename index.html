@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Amarella Produksi</title>
+<meta name="description" content="Amarella Patisserie: aplikasi tim produksi (jadwal, ambil barang gudang, produksi, surat jalan).">
+<link rel="canonical" href="https://amarellapatisserie.github.io/">
+<meta property="og:title" content="Amarella Produksi">
+<meta property="og:description" content="Login tim produksi Amarella.">
+<meta property="og:url" content="https://amarellapatisserie.github.io/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#24452A">
+<meta name="color-scheme" content="light only">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Amarella">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+  /* Halaman ini hanya "bingkai": aplikasi aslinya tetap di Google Apps Script. */
+  :root { --bg: #F2F4EF; --ink: #1B231B; --muted: #5F6D5D; --accent: #24452A; }
+  html { touch-action: manipulation; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+  #wait { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center; padding: 16px; background: var(--bg); transition: opacity .3s; }
+  #wait b { font-size: 18px; }
+  #wait p { margin: 0; color: var(--muted); font-size: 14px; max-width: 34ch; }
+  #wait a { color: var(--accent); font-weight: 600; }
+  .dot { width: 34px; height: 34px; margin: 0 auto; border-radius: 50%; border: 3px solid var(--muted); border-top-color: var(--accent); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  /* ---- printer bluetooth (Web Bluetooth harus di halaman paling luar) ---- */
+  #pr { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
+  #pr[hidden], #sh[hidden] { display: none; }
+  #sh { position: fixed; inset: 0; z-index: 11; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
+  #pr .box, #sh .box { background: #fff; color: #16252D; border-radius: 14px; padding: 20px; max-width: 360px; display: grid; gap: 12px; font-size: 15px; }
+  #pr h2, #sh h2 { margin: 0; font-size: 18px; }
+  #pr p, #sh p { margin: 0; color: #5E6E77; font-size: 14px; }
+  #pr .err, #sh .err { color: #B42318; font-weight: 600; }
+  #pr button, #sh button { font: inherit; font-weight: 700; border-radius: 10px; padding: 14px; border: 1px solid #DCE3E7; background: #fff; color: #16252D; }
+  #pr button.pri, #sh button.pri { background: #24452A; border-color: #24452A; color: #fff; font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="wait" role="status">
+  <img src="logo.png" alt="Amarella Patisserie" style="width:min(260px,70vw);height:auto;margin:0 auto 8px">
+  <div class="dot" aria-hidden="true"></div>
+  <p>Memuat aplikasi...</p>
+  <p id="slow" hidden>Belum muncul? <a id="direct" href="#" target="_top">Buka aplikasi langsung</a></p>
+</div>
+<iframe id="app" title="Amarella Produksi" allow="clipboard-write"></iframe>
+<div id="sh" hidden role="dialog" aria-modal="true" aria-labelledby="shT" class="ovl"><div class="box">
+  <h2 id="shT">&#128196; Kirim PDF</h2>
+  <p id="shName"></p>
+  <p>Tekan <b>Bagikan PDF</b>, pilih <b>WhatsApp</b>, lalu pilih chat tujuan.</p>
+  <p id="shErr" class="err" hidden></p>
+  <button class="pri" id="shGo">Bagikan PDF</button>
+  <button id="shDl">Unduh PDF</button>
+  <button id="shNo">Tutup</button>
+</div></div>
+<div id="pr" hidden role="dialog" aria-modal="true" aria-labelledby="prT"><div class="box">
+  <h2 id="prT">&#128424; Printer bluetooth</h2>
+  <p id="prMsg">Hubungkan printer 58mm. Pastikan printer menyala dan Bluetooth HP aktif.</p>
+  <p id="prErr" class="err" hidden></p>
+  <button class="pri" id="prGo">Pilih printer</button>
+  <button id="prAll" hidden>Printer tidak ada di daftar? Tampilkan semua perangkat</button>
+  <button id="prNo">Batal</button>
+</div></div>
+<script>
+  // GANTI link di bawah ini kalau link /exec Google Apps Script Anda berubah.
+  var APP_URL = "https://script.google.com/macros/s/AKfycbz87NXrHetM_HHVDJYlCePGfeHrLp0s1o-NY0Ij77QEhhIimOij5jVe_wwH0wp_XFr3/exec";
+  var f = document.getElementById("app"), w = document.getElementById("wait");
+  document.getElementById("direct").href = APP_URL;
+  f.addEventListener("load", function () { w.style.opacity = "0"; setTimeout(function () { w.hidden = true; }, 300); });
+  setTimeout(function () { document.getElementById("slow").hidden = false; }, 8000);
+  f.src = APP_URL;
+
+  /* ===== APLIKASI DI HP (PWA) ===== */
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () { });
+  var installEvt = null;
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEvt = e; status(); });
+  window.addEventListener("appinstalled", function () { installEvt = null; status(); });
+  function standalone() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; }
+
+  /* ===== PRINTER BLUETOOTH (Web Bluetooth, Chrome Android) =====
+   * Aplikasi di dalam bingkai mengirim perintah lewat postMessage; halaman ini yang memegang koneksi printer.
+   * Printer thermal BLE memakai salah satu service di bawah; dicari karakteristik yang bisa ditulis. */
+  var SVC = ["000018f0-0000-1000-8000-00805f9b34fb", "0000ff00-0000-1000-8000-00805f9b34fb", "e7810a71-73ae-499d-8c15-faa9aef0c3f2",
+    "49535343-fe7d-4ae5-8fa9-9fafd205e455", "0000ffe0-0000-1000-8000-00805f9b34fb", "0000fee7-0000-1000-8000-00805f9b34fb",
+    "0000ae30-0000-1000-8000-00805f9b34fb", "0000ae3a-0000-1000-8000-00805f9b34fb", "0000ff12-0000-1000-8000-00805f9b34fb",
+    "0000fff0-0000-1000-8000-00805f9b34fb", "0000ffb0-0000-1000-8000-00805f9b34fb", "0000ae00-0000-1000-8000-00805f9b34fb"];
+  var NAMES = ["Printer", "PRINTER", "printer", "BlueTooth Printer", "BT Printer", "POS", "Pos", "RPP", "MTP", "MPT", "PT-", "PT2", "PT8", "P58", "P80", "58", "80",
+    "XP-", "XP", "ZJ", "GOOJPRT", "EPPOS", "EP5", "Panda", "PANDA", "Thermal", "MP", "RP", "Inner", "InnerPrinter", "IposPrinter", "HM-", "HOIN", "ZCS", "Xprinter", "Zjiang", "SPRT", "QS", "YHD", "BlueTooth", "Bluetooth Printer"];
+  var FILTERS = SVC.map(function (u) { return { services: [u] }; }).concat(NAMES.map(function (n) { return { namePrefix: n }; }));
+  var bt = navigator.bluetooth, dev = null, chr = null, app = null, appOrigin = null, pending = null, state = "off", manualOff = false, lastErr = "";
+  var pr = document.getElementById("pr"), prMsg = document.getElementById("prMsg"), prErr = document.getElementById("prErr"), prGo = document.getElementById("prGo"), prAll = document.getElementById("prAll");
+  function okOrigin(o) { return o === "https://script.google.com" || /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(o); }
+  function send(m) { if (app && appOrigin) app.postMessage(m, appOrigin); }
+  function connected() { return !!(dev && chr && dev.gatt && dev.gatt.connected); }
+  function status() {
+    if (connected()) state = "on"; else if (state === "on") state = "off";
+    send({ amr: "printer", supported: !!bt, connected: connected(), state: state, name: dev ? (dev.name || "Printer") : "", err: lastErr,
+      canInstall: !!installEvt, standalone: standalone() });
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function findChar(server) {
+    var list = await server.getPrimaryServices(), best = null;
+    for (var i = 0; i < list.length; i++) {
+      var cs = await list[i].getCharacteristics();
+      for (var j = 0; j < cs.length; j++) { var p = cs[j].properties; if (p.writeWithoutResponse || p.write) { if (!best || (p.writeWithoutResponse && !best.properties.writeWithoutResponse)) best = cs[j]; } }
+    }
+    if (!best) throw new Error("Printer tersambung, tapi jalur cetaknya tidak ditemukan. Printer ini mungkin tidak mendukung Bluetooth LE.");
+    return best;
+  }
+  async function attach(d) {
+    if (dev !== d) {
+      dev = d;
+      d.addEventListener("gattserverdisconnected", function () { chr = null; if (dev === d && !manualOff) reconnect(d); else status(); });
+    }
+    state = "connecting"; lastErr = ""; status();
+    try { var server = await d.gatt.connect(); chr = await findChar(server); }
+    catch (e) { state = "off"; lastErr = (e && e.message) || String(e); status(); throw e; }
+    manualOff = false;
+    try { localStorage.setItem("amarella_printer", d.id); } catch (e) { }
+    state = "on"; status();
+  }
+  /* Koneksi putus (printer mati / jauh): coba sambung lagi sendiri beberapa kali. */
+  async function reconnect(d) {
+    state = "connecting"; status();
+    for (var i = 0; i < 6 && dev === d && !manualOff; i++) {
+      await sleep(i < 2 ? 1500 : 5000);
+      try { await attach(d); return; } catch (e) { }
+    }
+    state = "off"; status();
+  }
+  async function ensure() {
+    if (connected()) return;
+    if (dev) { await attach(dev); return; }
+    if (bt && bt.getDevices) {
+      var ds = await bt.getDevices(), id = null; try { id = localStorage.getItem("amarella_printer"); } catch (e) { }
+      var d = ds.filter(function (x) { return x.id === id; })[0] || (ds.length === 1 ? ds[0] : null);
+      if (d) { await attach(d); return; }
+    }
+    throw new Error("PILIH");
+  }
+  async function write(bytes) {
+    var noResp = chr.properties.writeWithoutResponse, size = 20; // aman untuk semua printer (MTU minimum)
+    for (var i = 0; i < bytes.length; i += size) {
+      var part = bytes.slice(i, i + size);
+      if (noResp && chr.writeValueWithoutResponse) { await chr.writeValueWithoutResponse(part); await sleep(12); }
+      else if (chr.writeValueWithResponse) await chr.writeValueWithResponse(part);
+      else await chr.writeValue(part);
+    }
+  }
+  function bytesOf(b64) { var s = atob(b64), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  async function doPrint(job) { await ensure(); await write(bytesOf(job.b64)); send({ amr: "printed", ok: true, id: job.id }); status(); }
+  /* Pilih printer: langsung buka daftar printer (ketukan di aplikasi berlaku juga di sini). Kalau browser menolak, tampilkan tombol. */
+  async function choose(all, job) {
+    prErr.hidden = true; prGo.disabled = true; prAll.disabled = true;
+    try {
+      if (!bt) throw new Error("Browser ini tidak mendukung printer bluetooth. Pakai Google Chrome di HP Android.");
+      var d = await bt.requestDevice(all ? { acceptAllDevices: true, optionalServices: SVC } : { filters: FILTERS, optionalServices: SVC });
+      prMsg.textContent = "Menyambungkan ke " + (d.name || "printer") + "...";
+      await attach(d); pr.hidden = true;
+      job = job || pending; pending = null;
+      if (job) await doPrint(job);
+      return true;
+    } catch (e) {
+      if (e && e.name === "SecurityError") { ask(job); return false; }
+      if (e && e.name === "NotFoundError") { if (!pr.hidden) prAll.hidden = false; send({ amr: "printer", supported: true, connected: connected(), state: state, name: dev ? dev.name : "", cancelled: true }); }
+      else { ask(job, (e && e.message) || String(e)); prAll.hidden = false; }
+      return false;
+    } finally { prGo.disabled = false; prAll.disabled = false; }
+  }
+  function ask(job, err) {
+    pending = job || null; prErr.hidden = !err; prErr.textContent = err || "";
+    prMsg.textContent = job ? "Printer belum tersambung. Tekan \"Pilih printer\", pilih nama printer Anda, lalu nota langsung dicetak." : "Pastikan printer menyala, Bluetooth & Lokasi HP aktif, lalu tekan \"Pilih printer\".";
+    prGo.textContent = dev ? "Sambungkan lagi / pilih printer" : "Pilih printer"; prAll.hidden = !err; pr.hidden = false;
+  }
+  prAll.onclick = function () { choose(true); };
+  prGo.onclick = function () { choose(false); };
+  document.getElementById("prNo").onclick = function () { pr.hidden = true; if (pending) { send({ amr: "printed", ok: false, id: pending.id, err: "Print dibatalkan" }); pending = null; } };
+  /* ===== BAGIKAN FILE PDF (menu Bagikan Android -> WhatsApp) ===== */
+  var shJob = null, sh = document.getElementById("sh"), shErr = document.getElementById("shErr");
+  function pdfFile(m) { return new File([bytesOf(m.b64)], m.name || "Dokumen.pdf", { type: "application/pdf" }); }
+  /* Kotak "Bagikan PDF" selalu ditampilkan di halaman ini, supaya ketukan kasir langsung diterima Chrome
+   * (perintah dari dalam bingkai aplikasi kadang ditolak). */
+  function sharePdf(m) {
+    shJob = m; shErr.hidden = true; document.getElementById("shName").textContent = m.name || "Dokumen.pdf";
+    var f = pdfFile(m), can = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] }));
+    document.getElementById("shGo").hidden = !can;
+    if (!can) { shErr.textContent = "Browser ini tidak bisa membagikan file. Tekan Unduh PDF, lalu kirim file dari folder Download lewat WhatsApp. (Paling lancar: Google Chrome di Android.)"; shErr.hidden = false; }
+    sh.hidden = false;
+  }
+  document.getElementById("shGo").onclick = async function () {
+    if (!shJob) return; var m = shJob;
+    try { await navigator.share({ files: [pdfFile(m)], title: m.name || "Dokumen" }); send({ amr: "shared", ok: true, id: m.id }); sh.hidden = true; shJob = null; }
+    catch (x) { if (x && x.name === "AbortError") return; shErr.textContent = "Gagal membagikan (" + ((x && x.name) || "") + ": " + ((x && x.message) || x) + "). Coba Unduh PDF."; shErr.hidden = false; }
+  };
+  document.getElementById("shDl").onclick = function () {
+    if (!shJob) return; var a = document.createElement("a"); a.href = URL.createObjectURL(pdfFile(shJob)); a.download = shJob.name || "Dokumen.pdf";
+    document.body.appendChild(a); a.click(); a.remove(); send({ amr: "shared", ok: true, id: shJob.id, dl: true });
+  };
+  document.getElementById("shNo").onclick = function () { sh.hidden = true; shJob = null; };
+  window.addEventListener("message", async function (e) {
+    var m = e.data; if (!m || typeof m !== "object" || !m.amr || !okOrigin(e.origin)) return;
+    app = e.source; appOrigin = e.origin;
+    if (m.amr === "hello") { status(); if (bt && bt.getDevices && !connected() && !manualOff) { try { await ensure(); } catch (x) { } } return; }
+    if (m.amr === "connect") { manualOff = false; if (m.all) choose(true); else choose(false); return; }
+    if (m.amr === "reconnect") { manualOff = false; try { await ensure(); } catch (x) { choose(false); } return; }
+    if (m.amr === "disconnect") { manualOff = true; try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); } catch (x) { } chr = null; state = "off"; status(); return; }
+    if (m.amr === "forget") { manualOff = true; try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); if (dev && dev.forget) await dev.forget(); } catch (x) { } dev = null; chr = null; state = "off"; try { localStorage.removeItem("amarella_printer"); } catch (x) { } status(); return; }
+    if (m.amr === "install") { if (installEvt) { try { installEvt.prompt(); var c = await installEvt.userChoice; if (c && c.outcome === "accepted") installEvt = null; } catch (x) { } } status(); return; }
+    if (m.amr === "share") { sharePdf(m); return; }
+    if (m.amr === "print") {
+      if (!bt) { send({ amr: "printed", ok: false, id: m.id, err: "NOBT" }); return; }
+      try { await doPrint(m); }
+      catch (x) { if (x && x.message === "PILIH") choose(false, m); else { chr = null; ask(m, "Gagal mencetak: " + ((x && x.message) || x) + ". Coba sambungkan lagi."); } }
+    }
+  });
+</script>
+</body>
+</html>
