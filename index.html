@@ -18,19 +18,33 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
 <style>
   /* Halaman ini hanya "bingkai": aplikasi aslinya tetap di Google Apps Script. */
   :root { --bg: #F2F4EF; --ink: #1B231B; --muted: #5F6D5D; --accent: #24452A; }
   html { touch-action: manipulation; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
-  #wait { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center; padding: 16px; background: var(--bg); transition: opacity .3s; }
-  #wait b { font-size: 18px; }
-  #wait p { margin: 0; color: var(--muted); font-size: 14px; max-width: 34ch; }
-  #wait a { color: var(--accent); font-weight: 600; }
-  .dot { width: 34px; height: 34px; margin: 0 auto; border-radius: 50%; border: 3px solid var(--muted); border-top-color: var(--accent); animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  /* ---- halaman loading: egg tart + NOW LOADING bergaya game lama ---- */
+  #wait { position: fixed; inset: 0; z-index: 5; overflow: hidden; background: radial-gradient(90% 60% at 45% 38%, #EAD3BA, #E3C7AA 70%); color: #3B2A1B; transition: opacity .6s; }
+  #wait.out { opacity: 0; pointer-events: none; }
+  .tartbox { position: absolute; left: 50%; top: 40%; width: min(62vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%); transition: top 1s cubic-bezier(.7,0,.2,1), width 1s cubic-bezier(.7,0,.2,1); }
+  .tshadow { position: absolute; inset: 6% 4% 0 -2%; border-radius: 50%; background: radial-gradient(closest-side, rgba(80,50,25,.38), rgba(80,50,25,0)); transform: translate(-6%, 7%); filter: blur(6px); }
+  .tart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .ld { position: absolute; left: 0; right: 0; top: calc(40% + min(31vw, 150px) + 28px); display: grid; justify-items: center; gap: 14px; transition: opacity .5s; }
+  .ldtxt { font-family: "Silkscreen", "Courier New", monospace; font-size: 17px; letter-spacing: .14em; white-space: nowrap; }
+  .ldtxt span { display: inline-block; width: 3.2ch; text-align: left; }
+  .bar { --px: 3px; position: relative; width: min(74vw, 340px); height: 22px; box-sizing: border-box; padding: 4px; }
+  .bar::before { content: ""; position: absolute; inset: 0; background: #3B2A1B; padding: var(--px);
+    clip-path: polygon(var(--px) 0, calc(100% - var(--px)) 0, calc(100% - var(--px)) var(--px), 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, var(--px) calc(100% - var(--px)), 0 calc(100% - var(--px)), 0 var(--px), var(--px) var(--px));
+    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+  .cells { position: relative; display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 100%; }
+  .cells i { background: #3B2A1B; opacity: 0; transition: opacity .25s steps(2); }
+  .cells i.on { opacity: 1; }
+  .ldpct { font-family: "Silkscreen", "Courier New", monospace; font-size: 12px; letter-spacing: .12em; color: #8A6A4C; min-height: 1em; }
+  #slow { position: absolute; left: 16px; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: 14px; color: #6E5038; }
+  #slow a { color: #24452A; font-weight: 700; }
   /* ---- printer bluetooth (Web Bluetooth harus di halaman paling luar) ---- */
   #pr { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
   #pr[hidden], #sh[hidden] { display: none; }
@@ -44,10 +58,10 @@
 </style>
 </head>
 <body>
-<div id="wait" role="status">
-  <img src="logo.png" alt="Amarella Patisserie" style="width:min(260px,70vw);height:auto;margin:0 auto 8px">
-  <div class="dot" aria-hidden="true"></div>
-  <p>Memuat aplikasi...</p>
+<div id="wait" role="status" aria-label="Memuat aplikasi">
+  <div class="tartbox"><div class="tshadow"></div><img class="tart" src="tart.webp" alt="Egg tart Amarella"></div>
+  <div class="ld"><div class="ldtxt">NOW LOADING<span id="dots"></span></div>
+    <div class="bar" aria-hidden="true"><div class="cells" id="cells"></div></div><div class="ldpct" id="pct">0%</div></div>
   <p id="slow" hidden>Belum muncul? <a id="direct" href="#" target="_top">Buka aplikasi langsung</a></p>
 </div>
 <iframe id="app" title="Amarella Produksi" allow="clipboard-write"></iframe>
@@ -73,8 +87,20 @@
   var APP_URL = "https://script.google.com/macros/s/AKfycbz87NXrHetM_HHVDJYlCePGfeHrLp0s1o-NY0Ij77QEhhIimOij5jVe_wwH0wp_XFr3/exec";
   var f = document.getElementById("app"), w = document.getElementById("wait");
   document.getElementById("direct").href = APP_URL;
-  f.addEventListener("load", function () { w.style.opacity = "0"; setTimeout(function () { w.hidden = true; }, 300); });
-  setTimeout(function () { document.getElementById("slow").hidden = false; }, 8000);
+  /* Loading: kotak terisi pelan sampai 90%; penuh saat aplikasi memberi tanda "siap" (atau 12 detik setelah halaman Google termuat). */
+  var cells = document.getElementById("cells"), pctEl = document.getElementById("pct"), dotsEl = document.getElementById("dots"), N = 20, prog = 0, nd = 0, done = false;
+  cells.innerHTML = new Array(N + 1).join("<i></i>");
+  function paintLd() { var n = Math.floor(prog / 100 * N), cs = cells.children; for (var i = 0; i < N; i++) cs[i].className = i < n ? "on" : ""; pctEl.textContent = Math.round(prog) + "%"; }
+  var dotT = setInterval(function () { nd = (nd + 1) % 4; dotsEl.textContent = "...".slice(0, nd); }, 650);
+  var progT = setInterval(function () { if (done) return; var cap = 90, step = prog < 30 ? 4 : prog < 60 ? 2.5 : prog < 80 ? 1.2 : 0.4; prog = Math.min(cap, prog + (Math.random() < 0.2 ? 0 : step)); paintLd(); }, 300);
+  function finishLoading() {
+    if (done) return; done = true; clearInterval(progT);
+    var t = setInterval(function () { prog = Math.min(100, prog + 10); paintLd(); if (prog >= 100) { clearInterval(t); clearInterval(dotT); dotsEl.textContent = "..."; setTimeout(function () { w.classList.add("out"); setTimeout(function () { w.hidden = true; }, 650); }, 450); } }, 60);
+  }
+  window.addEventListener("message", function (e) { var m = e.data; if (m && typeof m === "object" && m.amr === "ready" && okOrigin(e.origin)) finishLoading(); });
+  f.addEventListener("load", function () { setTimeout(finishLoading, 12000); });
+  setTimeout(function () { if (!done) document.getElementById("slow").hidden = false; }, 15000);
+  paintLd();
   f.src = APP_URL;
 
   /* ===== APLIKASI DI HP (PWA) ===== */
