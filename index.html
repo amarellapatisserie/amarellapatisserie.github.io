@@ -27,24 +27,24 @@
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
   /* ---- halaman loading: egg tart + NOW LOADING bergaya game lama ---- */
-  #wait { position: fixed; inset: 0; z-index: 5; overflow: hidden; background: radial-gradient(90% 60% at 45% 38%, #EAD3BA, #E3C7AA 70%); color: #3B2A1B; transition: opacity .6s; }
+  #wait { position: fixed; inset: 0; z-index: 5; overflow: hidden; background: radial-gradient(110% 70% at 50% 35%, #3F6A3A, #24452A 55%, #162B17); color: #EEF0D6; transition: opacity .6s; }
   #wait.out { opacity: 0; pointer-events: none; }
   .tartbox { position: absolute; left: 50%; top: 40%; width: min(62vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%); transition: top 1s cubic-bezier(.7,0,.2,1), width 1s cubic-bezier(.7,0,.2,1); }
-  .tshadow { position: absolute; inset: 6% 4% 0 -2%; border-radius: 50%; background: radial-gradient(closest-side, rgba(80,50,25,.38), rgba(80,50,25,0)); transform: translate(-6%, 7%); filter: blur(6px); }
+  .tshadow { position: absolute; inset: 6% 4% 0 -2%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.45), rgba(0,0,0,0)); transform: translate(-4%, 8%); filter: blur(8px); }
   .tart { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .ld { position: absolute; left: 0; right: 0; top: calc(40% + min(31vw, 150px) + 28px); display: grid; justify-items: center; gap: 14px; transition: opacity .5s; }
   .ldtxt { font-family: "Silkscreen", "Courier New", monospace; font-size: 17px; letter-spacing: .14em; white-space: nowrap; }
   .ldtxt span { display: inline-block; width: 3.2ch; text-align: left; }
   .bar { --px: 3px; position: relative; width: min(74vw, 340px); height: 22px; box-sizing: border-box; padding: 4px; }
-  .bar::before { content: ""; position: absolute; inset: 0; background: #3B2A1B; padding: var(--px);
+  .bar::before { content: ""; position: absolute; inset: 0; background: #EEF0D6; padding: var(--px);
     clip-path: polygon(var(--px) 0, calc(100% - var(--px)) 0, calc(100% - var(--px)) var(--px), 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, var(--px) calc(100% - var(--px)), 0 calc(100% - var(--px)), 0 var(--px), var(--px) var(--px));
     -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
   .cells { position: relative; display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 100%; }
-  .cells i { background: #3B2A1B; opacity: 0; transition: opacity .25s steps(2); }
+  .cells i { background: #EEF0D6; opacity: 0; transition: opacity .25s steps(2); }
   .cells i.on { opacity: 1; }
-  .ldpct { font-family: "Silkscreen", "Courier New", monospace; font-size: 12px; letter-spacing: .12em; color: #8A6A4C; min-height: 1em; }
-  #slow { position: absolute; left: 16px; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: 14px; color: #6E5038; }
-  #slow a { color: #24452A; font-weight: 700; }
+  .ldpct { font-family: "Silkscreen", "Courier New", monospace; font-size: 12px; letter-spacing: .12em; color: #B9C6AE; min-height: 1em; }
+  #slow { position: absolute; left: 16px; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: 14px; color: #DDE6D3; }
+  #slow a { color: #EEF0D6; font-weight: 700; }
   /* ---- printer bluetooth (Web Bluetooth harus di halaman paling luar) ---- */
   #pr { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
   #pr[hidden], #sh[hidden] { display: none; }
