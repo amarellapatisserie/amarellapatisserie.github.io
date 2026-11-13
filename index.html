@@ -233,6 +233,10 @@
   window.addEventListener("message", async function (e) {
     var m = e.data; if (!m || typeof m !== "object" || !m.amr || !okOrigin(e.origin)) return;
     app = e.source; appOrigin = e.origin;
+    /* Tetap login: token aplikasi disimpan di halaman ini (lebih awet daripada di dalam bingkai Google). */
+    if (m.amr === "saveToken") { try { localStorage.setItem("amarella_token", m.token || ""); localStorage.setItem("amarella_user", m.user || ""); } catch (x) { } return; }
+    if (m.amr === "clearToken") { try { localStorage.removeItem("amarella_token"); } catch (x) { } return; }
+    if (m.amr === "getToken") { var tk = "", us = ""; try { tk = localStorage.getItem("amarella_token") || ""; us = localStorage.getItem("amarella_user") || ""; } catch (x) { } send({ amr: "token", token: tk, user: us }); return; }
     if (m.amr === "hello") { status(); if (bt && bt.getDevices && !connected() && !manualOff) { try { await ensure(); } catch (x) { } } return; }
     if (m.amr === "connect") { manualOff = false; if (m.all) choose(true); else choose(false); return; }
     if (m.amr === "reconnect") { manualOff = false; try { await ensure(); } catch (x) { choose(false); } return; }
