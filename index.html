@@ -47,7 +47,12 @@
   #slow a { color: #EEF0D6; font-weight: 700; }
   /* ---- printer bluetooth (Web Bluetooth harus di halaman paling luar) ---- */
   #pr { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
-  #pr[hidden], #sh[hidden] { display: none; }
+  #pr[hidden], #sh[hidden], #pn[hidden] { display: none; }
+  #pn { position: fixed; inset: 0; z-index: 10; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
+  #pn .box { background: #fff; color: #16252D; border-radius: 14px; padding: 20px; max-width: 360px; display: grid; gap: 12px; font-size: 15px; }
+  #pn h2 { margin: 0; font-size: 18px; } #pn p { margin: 0; color: #5E6E77; font-size: 14px; }
+  #pn button { font: inherit; font-weight: 700; border-radius: 10px; padding: 14px; border: 1px solid #DCE3E7; background: #fff; color: #16252D; }
+  #pn button.pri { background: #24452A; border-color: #24452A; color: #fff; font-size: 16px; }
   #sh { position: fixed; inset: 0; z-index: 11; display: grid; place-content: center; padding: 16px; background: rgba(0,0,0,.5); }
   #pr .box, #sh .box { background: #fff; color: #16252D; border-radius: 14px; padding: 20px; max-width: 360px; display: grid; gap: 12px; font-size: 15px; }
   #pr h2, #sh h2 { margin: 0; font-size: 18px; }
@@ -73,6 +78,13 @@
   <button class="pri" id="shGo">Bagikan PDF</button>
   <button id="shDl">Unduh PDF</button>
   <button id="shNo">Tutup</button>
+</div></div>
+<div id="pn" hidden role="dialog" aria-modal="true" aria-labelledby="pnT"><div class="box">
+  <h2 id="pnT">&#128276; Notifikasi PO</h2>
+  <p>Supaya PO dari outlet tetap masuk walau aplikasi ditutup atau sedang membuka aplikasi lain, izinkan notifikasi di device ini.</p>
+  <p>Setelah menekan tombol, pilih <b>Izinkan / Allow</b>.</p>
+  <button class="pri" id="pnGo">Izinkan notifikasi</button>
+  <button id="pnNo">Nanti saja</button>
 </div></div>
 <div id="pr" hidden role="dialog" aria-modal="true" aria-labelledby="prT"><div class="box">
   <h2 id="prT">&#128424; Printer bluetooth</h2>
@@ -109,6 +121,34 @@
   window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEvt = e; status(); });
   window.addEventListener("appinstalled", function () { installEvt = null; status(); });
   function standalone() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; }
+
+  /* ===== NOTIFIKASI PUSH (PO outlet) =====
+   * Aplikasi mengirim kunci publik server; halaman ini (pemilik service worker) mendaftar ke layanan push browser
+   * lalu mengirim alamat pendaftarannya kembali ke aplikasi untuk disimpan di server. */
+  var pn = document.getElementById("pn"), pnKey = "";
+  function pushOk() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
+  function keyBytes(k) { var s = atob(k.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((k.length + 3) % 4)), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  async function pushSubscribe(key) {
+    try {
+      var reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+      if (sub) { var cur = sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null, want = keyBytes(key);
+        if (!cur || cur.length !== want.length || cur.some(function (v, i) { return v !== want[i]; })) { await sub.unsubscribe(); sub = null; } }
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+      send({ amr: "pushSub", endpoint: sub.endpoint });
+    } catch (x) { send({ amr: "pushSub", err: String((x && x.message) || x) }); }
+  }
+  function pushStart(key, silent) {
+    if (!pushOk()) { send({ amr: "pushSub", err: "NOSUPPORT", standalone: standalone() }); return; }
+    if (Notification.permission === "granted") { pushSubscribe(key); return; }
+    if (Notification.permission === "denied") { send({ amr: "pushSub", err: "DENIED" }); return; }
+    if (silent) return;
+    pnKey = key; pn.hidden = false;
+  }
+  document.getElementById("pnGo").onclick = function () {
+    pn.hidden = true;
+    Notification.requestPermission().then(function (r) { if (r === "granted") pushSubscribe(pnKey); else send({ amr: "pushSub", err: r === "denied" ? "DENIED" : "DISMISSED" }); });
+  };
+  document.getElementById("pnNo").onclick = function () { pn.hidden = true; send({ amr: "pushSub", err: "DISMISSED" }); };
 
   /* ===== PRINTER BLUETOOTH (Web Bluetooth, Chrome Android) =====
    * Aplikasi di dalam bingkai mengirim perintah lewat postMessage; halaman ini yang memegang koneksi printer.
@@ -244,6 +284,7 @@
     if (m.amr === "forget") { manualOff = true; try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); if (dev && dev.forget) await dev.forget(); } catch (x) { } dev = null; chr = null; state = "off"; try { localStorage.removeItem("amarella_printer"); } catch (x) { } status(); return; }
     if (m.amr === "install") { if (installEvt) { try { installEvt.prompt(); var c = await installEvt.userChoice; if (c && c.outcome === "accepted") installEvt = null; } catch (x) { } } status(); return; }
     if (m.amr === "share") { sharePdf(m); return; }
+    if (m.amr === "push") { pushStart(m.key, !!m.silent); return; }
     if (m.amr === "print") {
       if (!bt) { send({ amr: "printed", ok: false, id: m.id, err: "NOBT" }); return; }
       try { await doPrint(m); }
