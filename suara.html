@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suara notifikasi PO</title>
+<link rel="icon" href="favicon.png">
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #F3F5EF; color: #16252D; }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 14px; }
+  .card { background: #fff; border: 1px solid #DCE3D6; border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+  h1 { font-size: 20px; margin: 4px 0 0; color: #24452A; }
+  h2 { font-size: 16px; margin: 0; }
+  p, li { font-size: 15px; line-height: 1.5; margin: 0; }
+  ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  a.btn, button { display: block; text-align: center; font: inherit; font-weight: 700; font-size: 16px; padding: 14px; border-radius: 12px; border: 1px solid #24452A; text-decoration: none; }
+  a.btn { background: #24452A; color: #fff; }
+  button { background: #fff; color: #24452A; }
+  .sub { color: #5E6E77; font-size: 13.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>&#128276; Suara khas notifikasi PO</h1>
+  <div class="card">
+    <p>Ini bunyi alarm yang sama dengan di dalam aplikasi Amarella. Pasang sebagai suara notifikasi aplikasi Amarella supaya PO dari outlet tetap terdengar khas walau aplikasi ditutup.</p>
+    <button type="button" id="play">&#9654; Dengarkan</button>
+    <a class="btn" href="alarm-po.mp3" download="Amarella PO.mp3">&#11015; Unduh suara (MP3)</a>
+    <p class="sub">Kalau tidak bisa diunduh, tekan lama tombol di atas lalu pilih <b>Download link / Unduh link</b>.</p>
+  </div>
+  <div class="card">
+    <h2>Cara memasang di tablet / HP Android</h2>
+    <ol>
+      <li>Unduh suaranya (tombol hijau di atas).</li>
+      <li>Buka aplikasi <b>File / My Files</b>, cari <b>Amarella PO.mp3</b> di folder <b>Download</b>, lalu <b>pindahkan / salin</b> ke folder <b>Notifications</b> (di penyimpanan internal).</li>
+      <li>Buka <b>Setelan &rarr; Aplikasi &rarr; Amarella &rarr; Notifikasi</b>. Kalau tidak ada aplikasi Amarella: <b>Setelan &rarr; Aplikasi &rarr; Chrome &rarr; Notifikasi &rarr; Situs</b> lalu pilih <b>amarellapatisserie.github.io</b>.</li>
+      <li>Ketuk kategori notifikasinya &rarr; <b>Suara</b> &rarr; pilih <b>Amarella PO</b>. (Samsung: ketuk <b>+</b> / <b>Tambah</b> untuk memilih file dari penyimpanan.)</li>
+      <li>Aktifkan juga <b>Tampil di layar / Pop-up</b>, dan kalau ada <b>Abaikan Jangan Ganggu</b>.</li>
+      <li>Naikkan <b>volume notifikasi</b> tablet.</li>
+    </ol>
+    <p class="sub">Coba dari aplikasi: menu <b>PO dari outlet &rarr; Kirim notifikasi percobaan</b>, lalu tutup aplikasinya.</p>
+  </div>
+</main>
+<script>
+  var a = new Audio("alarm-po.mp3");
+  document.getElementById("play").onclick = function () { a.currentTime = 0; a.play(); };
+</script>
+</body>
+</html>
