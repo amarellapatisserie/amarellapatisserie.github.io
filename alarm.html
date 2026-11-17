@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amarella Alarm</title>
+<link rel="icon" href="favicon.png">
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #F3F5EF; color: #16252D; }
+  main { max-width: 600px; margin: 0 auto; padding: 20px 16px 40px; display: grid; gap: 14px; }
+  .card { background: #fff; border: 1px solid #DCE3D6; border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+  h1 { font-size: 22px; margin: 4px 0 0; color: #24452A; }
+  h2 { font-size: 17px; margin: 0; }
+  p, li { font-size: 15px; line-height: 1.55; margin: 0; }
+  ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+  a.btn { display: block; text-align: center; font-weight: 800; font-size: 17px; padding: 15px; border-radius: 12px; text-decoration: none; background: #24452A; color: #fff; }
+  .sub { color: #5E6E77; font-size: 13.5px; }
+  .warn { background: #FFF1E6; color: #7C2D12; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>&#9200; Amarella Alarm</h1>
+  <div class="card">
+    <p>Aplikasi kecil untuk <b>tablet produksi</b>. Saat outlet mengirim PO, tablet <b>berbunyi alarm terus</b> (suara khas Amarella, volume alarm, tetap bunyi walau tablet mode senyap) sampai ditekan <b>HENTIKAN</b> atau PO sudah diterima. Tetap jalan walau aplikasi Amarella ditutup.</p>
+    <a class="btn" href="amarella-alarm.apk" download>&#11015; Unduh Amarella Alarm (APK, 74 KB)</a>
+    <p class="sub">Khusus Android 8 ke atas. Versi 1.0.</p>
+  </div>
+  <div class="card">
+    <h2>1. Pasang</h2>
+    <ol>
+      <li>Tekan tombol unduh di atas (di Chrome tablet produksi).</li>
+      <li>Buka file <b>amarella-alarm.apk</b> dari notifikasi unduhan.</li>
+      <li>Kalau muncul "tidak diizinkan memasang aplikasi dari sumber ini": tekan <b>Setelan</b> &rarr; aktifkan <b>Izinkan dari sumber ini</b> &rarr; kembali &rarr; <b>Pasang / Install</b>.</li>
+      <li>Kalau muncul peringatan Play Protect ("aplikasi tidak dikenal"): tekan <b>Detail lainnya &rarr; Tetap instal</b>. Aplikasi ini buatan sendiri untuk Amarella, tidak dari Play Store.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h2>2. Hubungkan</h2>
+    <ol>
+      <li>Buka aplikasi <b>Amarella</b> (yang biasa) &rarr; login akun tablet produksi &rarr; menu <b>PO dari outlet</b> &rarr; <b>&#9200; Hubungkan aplikasi alarm</b>. Muncul kode 16 huruf.</li>
+      <li>Buka <b>Amarella Alarm</b> &rarr; ketik kodenya &rarr; tekan <b>MULAI</b>. Kalau diminta izin notifikasi, pilih <b>Izinkan</b>.</li>
+      <li>Tekan <b>Izinkan tetap jalan (baterai)</b> &rarr; <b>Izinkan</b>.</li>
+      <li>Tekan <b>Izinkan tampil di atas aplikasi lain</b> &rarr; aktifkan untuk Amarella Alarm (supaya layar alarm muncul sendiri).</li>
+      <li>Tekan <b>TES ALARM</b>: harus berbunyi terus sampai ditekan <b>HENTIKAN ALARM</b>.</li>
+    </ol>
+    <div class="warn">Setelah itu biarkan saja. Di bilah notifikasi ada tulisan <b>"Amarella Alarm aktif"</b>: artinya aplikasi sedang menjaga PO. Jangan dimatikan dari daftar aplikasi.</div>
+  </div>
+  <div class="card">
+    <h2>Saat ada PO</h2>
+    <p>Layar oranye "PO BARU: SMC" muncul dan alarm berbunyi terus. Tekan <b>Hentikan &amp; buka Amarella</b> untuk langsung menerima PO, atau <b>HENTIKAN ALARM</b>. Alarm juga berhenti sendiri kalau PO sudah diterima dari device lain. PO berikutnya akan berbunyi lagi.</p>
+    <p class="sub">Merek tertentu (Xiaomi, Oppo, Vivo, Realme) punya penghemat baterai tambahan: buka Setelan &rarr; Aplikasi &rarr; Amarella Alarm &rarr; Baterai &rarr; pilih <b>Tanpa batasan</b>, dan aktifkan <b>Mulai otomatis</b>.</p>
+  </div>
+</main>
+</body>
+</html>
