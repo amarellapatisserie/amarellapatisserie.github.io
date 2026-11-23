@@ -235,11 +235,15 @@
       return true;
     } catch (e) {
       if (e && e.name === "SecurityError") { ask(job); return false; }
-      if (e && e.name === "NotFoundError") { if (!pr.hidden) prAll.hidden = false; send({ amr: "printer", supported: true, connected: connected(), state: state, name: dev ? dev.name : "", cancelled: true }); }
+      /* NotFoundError dipakai Chrome untuk 2 hal: daftar printer ditutup (Batal) ATAU Bluetooth/Lokasi/izin belum aktif.
+       * Yang kedua dulu dianggap Batal sehingga tombol "Cari printer" terlihat tidak berbuat apa-apa. */
+      if (e && e.name === "NotFoundError" && /cancel/i.test(e.message || "")) { if (!pr.hidden) prAll.hidden = false; send({ amr: "printer", supported: true, connected: connected(), state: state, name: dev ? dev.name : "", cancelled: true }); }
+      else if (e && e.name === "NotFoundError") { lastErr = "Bluetooth belum siap: nyalakan Bluetooth dan Lokasi tablet, lalu izinkan Chrome memakai Perangkat sekitar."; ask(job, BT_HELP + " (" + (e.message || "") + ")"); prAll.hidden = true; status(); }
       else { ask(job, (e && e.message) || String(e)); prAll.hidden = false; }
       return false;
     } finally { prGo.disabled = false; prAll.disabled = false; }
   }
+  var BT_HELP = "Chrome tidak bisa membuka daftar printer. 1) Nyalakan Bluetooth tablet. 2) Nyalakan Lokasi (GPS). 3) Buka Setelan > Aplikasi > Chrome > Izin: izinkan \"Perangkat sekitar\" (Nearby devices) dan \"Lokasi\". Lalu tekan Pilih printer lagi.";
   function ask(job, err) {
     pending = job || null; prErr.hidden = !err; prErr.textContent = err || "";
     prMsg.textContent = job ? "Printer belum tersambung. Tekan \"Pilih printer\", pilih nama printer Anda, lalu nota langsung dicetak." : "Pastikan printer menyala, Bluetooth & Lokasi HP aktif, lalu tekan \"Pilih printer\".";
